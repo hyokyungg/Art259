@@ -1,1 +1,1 @@
-# Art259 Project
+# ART 259 PROJECT
