@@ -1,0 +1,27 @@
+
+body {
+  margin-top: 10px;
+  margin-left: 50px;
+  padding: 20px;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  text-align: center; 
+}
+
+h1 {
+  color: #452a05;
+  font-family: "Capriola", sans-serif;
+  font-weight: 400;
+  font-size: 40px;
+  margin-bottom: 20px;
+}
+
+p {
+  font-family: "Klee One", cursive;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.5;
+}
