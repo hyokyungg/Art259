@@ -17,14 +17,19 @@ let maxBarWidth;
 let gameEnded = false; 
 let score = 0;
 
+let barWidth = 0;
+
 let colorShift = 0; 
 let gameEndedPlayed = false;
+let batchScore = 0;
+let overallScore = 0;
 
 let images = [];
 let burntPot;
 let newPot;
 let backgroundImage;
 let locatedPot;
+let gameState = "not-playing";
 
 let positions = [
   {x: 50, y: 100},
@@ -83,49 +88,33 @@ function setup() {
   gameStart.loop();
 }
 
-// Function to center the button
 function positionStartButton() {
   startButton.position(windowWidth / 2 - startButton.width / 2, windowHeight / 2 - startButton.height / 2+160);
 }
 
-// This function is triggered every time the window is resized
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  positionStartButton(); // Update the button's position
+  positionStartButton();
 }
 
-function runTimer() {
-  let displayTime = millis() - startTime; 
-  displayTime = constrain(displayTime, 0, maxTime); 
+// function runTimer() {
+//   let displayTime = millis() - startTime; 
+//   displayTime = constrain(displayTime, 0, maxTime); 
 
-  // Calculate bar width
-  let remainingTime = maxTime - displayTime;
-  let barWidth = map(remainingTime, 0, maxTime, 0, maxBarWidth); // Map to maxBarWidth for scaling
+//   // Calculate bar width
+//   let remainingTime = maxTime - displayTime;
+//   let barWidth = map(remainingTime, 0, maxTime, 0, maxBarWidth); // Map to maxBarWidth for scaling
 
-  // Draw the progress bar
-  fill(150, 200, 100);
-  rect(0, barYPosition - barHeight / 2, barWidth, barHeight);
+  // // Draw the progress bar
+  // fill(150, 200, 100);
+  // rect(0, barYPosition - barHeight / 2, barWidth, barHeight);
 
-  // When time is up
-  if (displayTime >= maxTime) {
-    gameEnded = true; 
-  }
-}
+//   // When time is up
+//   if (displayTime >= maxTime) {
+//     gameEnded = true; 
+//   }
+// }
 
-function draw() {
-  if (!gameStarted) {
-    drawBackground(); 
-    drawTitle();
-  } else if (!gameInProgress) {
-    drawGameIntro();
-  } else {
-    runGame();
-  }
-  
-  if (gameEnded) {
-    displayGameOver();
-  }
-}
 
 function drawBackground() {
   background(128, 0, 128);
@@ -137,18 +126,15 @@ function drawBackground() {
 }
 
 function drawTitle() {
-  textSize(60); // Title size is smaller now
+  textSize(60);
   textAlign(CENTER, CENTER);
   
-  // Shadow effect
   fill(0, 0, 0, 150);
   text(title, width / 2 + 5, height / 2 - 150 + 5);
   
-  // Main title
   fill(255, 230, 0, alpha);
   text(title, width / 2, height / 2 - 150);
   
-  // Increase opacity
   alpha += 5; 
   if (alpha > 255) alpha = 255; 
 }
@@ -204,20 +190,64 @@ function keyPressed() {
   }
 }
 
+if (gameInProgress){
+  drawBatch();
+}
+
+
+let batchCounter = 0;
+let batchText = "Batch: " + batchCounter;
+
+function draw() {
+  if (!gameStarted) {
+    drawBackground();
+    drawTitle();
+  } else if (!gameInProgress) {
+    drawGameIntro();
+  } else {
+    runGame();
+  }
+
+  if (gameEnded) {
+    displayGameOver();
+  }
+
+  textSize(24);
+  fill(0);
+  textAlign(LEFT, TOP);
+  if (gameState === "playing"){
+  text(batchText, 10, 10);
+}
+  // displayBar();
+}
+
+// function displayBar() {
+//   // Update the bar width based on time or game progress
+//   barWidth = map(batchCounter, 0, 5, 0, maxBarWidth); // This scales the width of the bar according to batchCounter
+  
+//   fill(0, 255, 0); // Green color for the progress bar
+//   rect(0, barYPosition, barWidth, barHeight); // Draw the progress bar
+// }
+
+// Modify the mousePressed function to check for a click on image[0] after the first round
+
 function runGame() {
   
+  gameState = "playing";
   if (gameEnded) {
+    batchCounter = 0;
     return;
   }
-  
+
   image(backgroundImage, 0, 0);
-  
+
   const clickableIndexes = [0, 5, 1, 2, 3, 4]; 
   for (let i of clickableIndexes) {
     if (images[i] && positions[i]) {
       if (i === 4) {
         image(images[i], positions[i].x, positions[i].y, 130, 120);
-      score++;
+        batchScore++; 
+        overallScore++; 
       } else {
         image(images[i], positions[i].x, positions[i].y);
       }
@@ -235,15 +265,31 @@ function runGame() {
     textSize(24);
     fill(0);
     textAlign(RIGHT, TOP);
-    text(`Score: ${(timerElapsed / 1000).toFixed(2)}`, width - 10, 10);
-    
+
+    text(`Overall Score: ${overallScore}`, width - 10, 10); 
+
+   
+    text(`Batch Score: ${batchScore}`, width - 10, 40); 
+
     if (timerElapsed > 7000) {
       potPositions.push({ x: 38, y: 375, img: burntPot });
+      gameEnded= true;
     }
 
     if (clickedImages.length === clickableIndexes.length) {
-      timerStart = null;
-      gameEnded = true;
+      
+      if (batchCounter < 5) {
+        batchCounter++;
+        batchText = "Batch: " + batchCounter;
+        clickedImages = []; 
+        batchScore = 0;
+        timerStart = null;
+      }
+      
+      if (batchCounter === 5) {
+        batchCounter =0;
+        gameEnded = true;
+      }
     }
   }
 }
@@ -261,11 +307,12 @@ function displayGameOver() {
   textSize(32);
   textAlign(CENTER, CENTER);
   fill(255);
-  text('Final Score: ' + score, width / 2, height / 2 + 20);
+  text('Final Score: ' + overallScore, width / 2, height / 2 + 20);
   
-  if (!restartButton) {  // Only create the restart button once
+  if (!restartButton) {
+    batchCounter=0;
     restartButton = createButton('Restart Game');
-    restartButton.position(windowWidth / 2 - startButton.width / 2, windowHeight / 2 - startButton.height / 2+180);
+    restartButton.position(windowWidth / 2 - startButton.width / 2, windowHeight / 2 - startButton.height / 2 + 180);
     styleButton(restartButton);
     restartButton.mousePressed(restartGame);
   }
@@ -278,8 +325,8 @@ function displayGameOver() {
   }
 }
 
+
 function restartGame() {
-  // Reset all game state variables
   gameStarted = false;
   gameInProgress = false;
   gameEnded = false;
@@ -288,9 +335,9 @@ function restartGame() {
   timerElapsed = 0;
   clickedImages = [];
   potPositions = [];
+  batchCounter = 1; // Reset batch counter
   gameEndedPlayed = false;
   
-  // Hide restart button, show start button
   startButton.show();
   restartButton.hide();
 
@@ -300,18 +347,18 @@ function restartGame() {
   startIntro(); 
 }
 
-
-// function gameOver() {
-//   gameInProgress = false;
-//   gameEnded = true;
-// }
-
 function mousePressed() {
-  const fixedX = 38;
-  const fixedY = 375;
+  
+  if (batchCounter===5){
+    gameEnded = true;
+  }
+  else{
+    console.log(batchCounter);
+  const fixedX = potPositions[batchCounter].x; 
+  const fixedY = potPositions[batchCounter].y;
 
-  // Only start counting clicks after the game has started
-  if (!gameInProgress) return;
+  
+  if (!gameInProgress) return; 
 
   if (timerStart === null) {
     timerStart = millis();
@@ -326,18 +373,18 @@ function mousePressed() {
       let imageWidth = images[i].width;
       let imageHeight = images[i].height;
 
-      // Check if the mouse click is inside the image bounds
+    
       if (
         mouseX > imageX && mouseX < imageX + imageWidth &&
         mouseY > imageY && mouseY < imageY + imageHeight
       ) {
         
         if (i === 4) {
-          score++; // 점수 추가
+          score++;
           console.log("Score:", score);
         }
         
-        // Ensure the clicked image is in the correct order
+      
         if (clickedImages.length === 0 && i === clickableIndexes[0]) {
           clickedImages.push(i);
           potPositions.push({ x: fixedX, y: fixedY, img: newPot });
@@ -357,11 +404,21 @@ function mousePressed() {
           clickedImages.push(i);
           potPositions.push({ x: fixedX, y: fixedY, img: images[10] });
           
-          // Stop the timer once the last image is clicked
           timerStart = null;
-          gameEnded = true;
         }
       }
     }
   }
 }
+}
+
+
+function resetGame() {
+  clickedImages = [];
+  potPositions = [];
+  gameEnded = false;
+  score = 0;
+  timerStart = null;
+  timerElapsed = 0;
+}
+
